@@ -564,6 +564,55 @@ class NixIO(BaseIO):
 
         self._create_source_links(block, nixblock)
 
+    def write_block_meta(self, block, use_obj_names=False):
+        """
+        RD 2019/02/19 write nix block up to segments to allow
+        data processing before saving
+        Convert the provided Neo Block to a NIX Block and write it to
+        the NIX file.
+
+        :param block: Neo Block to be written
+        :param use_obj_names: If True, will not generate unique object names
+        but will instead try to use the name of each Neo object. If these are
+        not unique, an exception will be raised.
+        """
+        if use_obj_names:
+            if not self._names_ok:
+                # _names_ok guards against check duplication
+                # If it's False, it means write_block() was called directly
+                self._use_obj_names([block])
+        if "nix_name" in block.annotations:
+            nix_name = block.annotations["nix_name"]
+        else:
+            nix_name = "neo.block.{}".format(self._generate_nix_name())
+            block.annotate(nix_name=nix_name)
+
+        if nix_name in self.nix_file.blocks:
+            nixblock = self.nix_file.blocks[nix_name]
+            del self.nix_file.blocks[nix_name]
+            del self.nix_file.sections[nix_name]
+
+        nixblock = self.nix_file.create_block(nix_name, "neo.block")
+        nixblock.metadata = self.nix_file.create_section(
+            nix_name, "neo.block.metadata"
+        )
+        metadata = nixblock.metadata
+        neoname = block.name if block.name is not None else ""
+        metadata["neo_name"] = neoname
+        nixblock.definition = block.description
+        if block.rec_datetime:
+            nixblock.force_created_at(
+                calculate_timestamp(block.rec_datetime)
+            )
+        if block.file_datetime:
+            fdt = calculate_timestamp(block.file_datetime)
+            metadata["file_datetime"] = fdt
+        if block.annotations:
+            for k, v in block.annotations.items():
+                self._write_property(metadata, k, v)
+
+        return block, nixblock
+
     def _write_channelindex(self, chx, nixblock):
         """
         Convert the provided Neo ChannelIndex to a NIX Source and write it to
@@ -615,7 +664,8 @@ class NixIO(BaseIO):
 
         # Descend into Units
         for unit in chx.units:
-            self._write_unit(unit, nixsource)
+            unit = self._write_unit(unit, nixsource)
+        return chx
 
     def _write_segment(self, segment, nixblock):
         """
@@ -652,15 +702,17 @@ class NixIO(BaseIO):
 
         # write signals, events, epochs, and spiketrains
         for asig in segment.analogsignals:
-            self._write_analogsignal(asig, nixblock, nixgroup)
+            asig = self._write_analogsignal(asig, nixblock, nixgroup)
         for isig in segment.irregularlysampledsignals:
-            self._write_irregularlysampledsignal(isig, nixblock, nixgroup)
+            isig = self._write_irregularlysampledsignal(isig, nixblock, nixgroup)
         for event in segment.events:
-            self._write_event(event, nixblock, nixgroup)
+            event = self._write_event(event, nixblock, nixgroup)
         for epoch in segment.epochs:
-            self._write_epoch(epoch, nixblock, nixgroup)
+            epoch = self._write_epoch(epoch, nixblock, nixgroup)
         for spiketrain in segment.spiketrains:
-            self._write_spiketrain(spiketrain, nixblock, nixgroup)
+            spiketrain = self._write_spiketrain(spiketrain, nixblock, nixgroup)
+
+        return segment
 
     def _write_analogsignal(self, anasig, nixblock, nixgroup):
         """
@@ -690,7 +742,7 @@ class NixIO(BaseIO):
                 else:
                     break
             nixgroup.data_arrays.extend(dalist)
-            return
+            return anasig
 
         data = np.transpose(anasig[:].magnitude)
         parentmd = nixgroup.metadata if nixgroup else nixblock.metadata
@@ -726,6 +778,7 @@ class NixIO(BaseIO):
                 self._write_property(metadata, k, v)
 
         self._signal_map[nix_name] = nixdas
+        return anasig
 
     def _write_irregularlysampledsignal(self, irsig, nixblock, nixgroup):
         """
@@ -757,7 +810,7 @@ class NixIO(BaseIO):
                 else:
                     break
             nixgroup.data_arrays.extend(dalist)
-            return
+            return irsig
 
         data = np.transpose(irsig[:].magnitude)
         parentmd = nixgroup.metadata if nixgroup else nixblock.metadata
@@ -789,6 +842,7 @@ class NixIO(BaseIO):
                 self._write_property(metadata, k, v)
 
         self._signal_map[nix_name] = nixdas
+        return irsig
 
     def _write_event(self, event, nixblock, nixgroup):
         """
@@ -841,6 +895,7 @@ class NixIO(BaseIO):
         for da in nixgroup.data_arrays:
             if da.type in ("neo.analogsignal", "neo.irregularlysampledsignal"):
                 nixmt.references.append(da)
+        return event
 
     def _write_epoch(self, epoch, nixblock, nixgroup):
         """
@@ -903,6 +958,7 @@ class NixIO(BaseIO):
         for da in nixgroup.data_arrays:
             if da.type in ("neo.analogsignal", "neo.irregularlysampledsignal"):
                 nixmt.references.append(da)
+        return epoch
 
     def _write_spiketrain(self, spiketrain, nixblock, nixgroup):
         """
@@ -981,6 +1037,7 @@ class NixIO(BaseIO):
         if spiketrain.left_sweep is not None:
             self._write_property(wfda.metadata, "left_sweep",
                                  spiketrain.left_sweep)
+        return spiketrain
 
     def _write_unit(self, neounit, nixchxsource):
         """
@@ -1008,6 +1065,7 @@ class NixIO(BaseIO):
         if neounit.annotations:
             for k, v in neounit.annotations.items():
                 self._write_property(metadata, k, v)
+        return neounit
 
     def _create_source_links(self, neoblock, nixblock):
         """

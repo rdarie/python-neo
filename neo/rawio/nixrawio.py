@@ -182,27 +182,39 @@ class NIXRawIO(BaseRawIO):
         return t_stop
 
     def _get_signal_size(self, block_index, seg_index, channel_indexes):
-        if (channel_indexes is None) or (
-                channel_indexes == slice(None, None, None)):
-            channel_indexes = list(range(self.header['signal_channels'].size))
-        ch_idx = channel_indexes[0]
+        if isinstance(channel_indexes, slice):
+            if channel_indexes == slice(None, None, None):
+                channel_indexes = list(range(self.header['signal_channels'].size))
+            ch_idx = channel_indexes[0]
+        else:
+            if (channel_indexes is None):
+                channel_indexes = list(range(self.header['signal_channels'].size))
+            ch_idx = channel_indexes[0]
         size = self.da_list['blocks'][block_index]['segments'][seg_index]['data_size'][ch_idx]
         return size  # size is per signal, not the sum of all channel_indexes
 
     def _get_signal_t_start(self, block_index, seg_index, channel_indexes):
-        if (channel_indexes is None) or (
-                channel_indexes == slice(None, None, None)):
-            channel_indexes = list(range(self.header['signal_channels'].size))
-        ch_idx = channel_indexes[0]
+        if isinstance(channel_indexes, slice):
+            if channel_indexes == slice(None, None, None):
+                channel_indexes = list(range(self.header['signal_channels'].size))
+                ch_idx = channel_indexes[0]
+        else:
+            if (channel_indexes is None):
+                channel_indexes = list(range(self.header['signal_channels'].size))
+            ch_idx = channel_indexes[0]
         da = [da for da in self.file.blocks[block_index].groups[seg_index].data_arrays][ch_idx]
         sig_t_start = float(da.metadata['t_start'])
         return sig_t_start  # assume same group_id always same t_start
 
     def _get_analogsignal_chunk(self, block_index, seg_index, i_start, i_stop, channel_indexes):
 
-        if (channel_indexes is None) or (
-                channel_indexes == slice(None, None, None)):
-            channel_indexes = list(range(self.header['signal_channels'].size))
+        if isinstance(channel_indexes, slice):
+            if channel_indexes == slice(None, None, None):
+                channel_indexes = list(range(self.header['signal_channels'].size))
+        else:
+            if (channel_indexes is None):
+                channel_indexes = list(range(self.header['signal_channels'].size))
+                
         if i_start is None:
             i_start = 0
         if i_stop is None:

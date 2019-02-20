@@ -714,6 +714,40 @@ class NixIO(BaseIO):
 
         return segment
 
+    def _write_segment_meta(self, segment, nixblock):
+        """
+        Convert the provided Neo Segment to a NIX Group and write it to the
+        NIX file.
+
+        :param segment: Neo Segment to be written
+        :param nixblock: NIX Block where the Group will be created
+        """
+        if "nix_name" in segment.annotations:
+            nix_name = segment.annotations["nix_name"]
+        else:
+            nix_name = "neo.segment.{}".format(self._generate_nix_name())
+            segment.annotate(nix_name=nix_name)
+
+        nixgroup = nixblock.create_group(nix_name, "neo.segment")
+        nixgroup.metadata = nixblock.metadata.create_section(
+            nix_name, "neo.segment.metadata"
+        )
+        metadata = nixgroup.metadata
+        neoname = segment.name if segment.name is not None else ""
+        metadata["neo_name"] = neoname
+        nixgroup.definition = segment.description
+        if segment.rec_datetime:
+            nixgroup.force_created_at(
+                calculate_timestamp(segment.rec_datetime)
+            )
+        if segment.file_datetime:
+            fdt = calculate_timestamp(segment.file_datetime)
+            metadata["file_datetime"] = fdt
+        if segment.annotations:
+            for k, v in segment.annotations.items():
+                self._write_property(metadata, k, v)
+        return segment, nixgroup
+
     def _write_analogsignal(self, anasig, nixblock, nixgroup):
         """
         Convert the provided ``anasig`` (AnalogSignal) to a list of NIX

@@ -897,7 +897,7 @@ class NixIO(BaseIO):
             # Event is in multiple Segments. Append to Group and return.
             mt = nixblock.multi_tags[nix_name]
             nixgroup.multi_tags.append(mt)
-            return
+            return event
 
         times = event.times.magnitude
         units = units_to_string(event.times.units)
@@ -1166,7 +1166,7 @@ class NixIO(BaseIO):
         :param v: The value to write
         :return: The newly created property
         """
-
+        print('name, {}, v, {}'.format(name, v))
         if isinstance(v, pq.Quantity):
             if len(v.shape):
                 section.create_property(name, tuple(v.magnitude))

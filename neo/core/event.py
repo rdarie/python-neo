@@ -151,6 +151,24 @@ class Event(DataObject):
     def _repr_pretty_(self, pp, cycle):
         super(Event, self)._repr_pretty_(pp, cycle)
 
+    def __add__(self, time):
+        '''
+        Shifts the time point of all spikes by adding the amount in
+        :attr:`time` (:class:`Quantity`)
+        If `time` is a scalar, this also shifts :attr:`t_start` and :attr:`t_stop`.
+        If `time` is an array, :attr:`t_start` and :attr:`t_stop` are not changed unless
+        some of the new spikes would be outside this range.
+        In this case :attr:`t_start` and :attr:`t_stop` are modified if necessary to
+        ensure they encompass all spikes.
+        It is not possible to add two SpikeTrains (raises ValueError).
+        '''
+        spikes = self.view(pq.Quantity)
+        new_times = spikes + time
+        return Event(times=new_times, units=self.units, name=self.name,
+            file_origin=self.file_origin, description=self.description,
+            array_annotations=deepcopy(self.array_annotations),
+              **self.annotations)
+
     def rescale(self, units):
         '''
         Return a copy of the :class:`Event` converted to the specified

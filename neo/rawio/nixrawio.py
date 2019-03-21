@@ -275,11 +275,16 @@ class NIXRawIO(BaseRawIO):
                     if head_id == src.id:
                         return len(mt.positions)
         return count
-
-    def _get_spike_timestamps(self, block_index, seg_index, unit_index, t_start, t_stop):
+    
+    def _get_all_spike_timestamps(self, block_index, seg_index, unit_index):
         spike_dict = self.unit_list['blocks'][block_index]['segments'][seg_index]['spiketrains']
         spike_timestamps = spike_dict[unit_index]
         spike_timestamps = np.transpose(spike_timestamps)
+        return spike_timestamps
+
+    def _get_spike_timestamps(self, block_index, seg_index, unit_index, t_start, t_stop):
+        spike_timestamps = self._get_all_spike_timestamps(
+            block_index, seg_index, unit_index)
 
         if t_start is not None or t_stop is not None:
             lim0 = t_start
@@ -298,16 +303,17 @@ class NIXRawIO(BaseRawIO):
         waveforms = seg['spiketrains_unit'][unit_index]['waveforms']
         if not waveforms:
             return None
+        
         raw_waveforms = np.array(waveforms)
-
-        if t_start is not None:
+        spike_timestamps = self._get_all_spike_timestamps(
+            block_index, seg_index, unit_index)
+        #import pdb; pdb.set_trace()
+        
+        if t_start is not None or t_stop is not None:
             lim0 = t_start
-            mask = (raw_waveforms >= lim0)
-            raw_waveforms = np.where(mask, raw_waveforms, np.nan)  # use nan to keep the shape
-        if t_stop is not None:
             lim1 = t_stop
-            mask = (raw_waveforms <= lim1)
-            raw_waveforms = np.where(mask, raw_waveforms, np.nan)
+            mask = (spike_timestamps >= lim0) & (spike_timestamps <= lim1)
+            raw_waveforms = raw_waveforms[mask, :, :]
         return raw_waveforms
 
     def _event_count(self, block_index, seg_index, event_channel_index):
@@ -393,4 +399,4 @@ class NIXRawIO(BaseRawIO):
         else:
             warntxt = "Name of annotation {} shadows parameter " \
                         "and is therefore dropped".format(props.name)
-            warnings.warn(warntxt)
+            #  warnings.warn(warntxt)

@@ -43,7 +43,15 @@ class NIXRawIO(BaseRawIO):
                 for da_idx, da in enumerate(seg.data_arrays):
                     if da.type == "neo.analogsignal":
                         chan_id = da_idx
-                        ch_name = da.metadata['neo_name']
+                        try:
+                            da_source = [
+                                i for i in da.sources
+                                if i.type == 'neo.channelindex'
+                                ][0]
+                            ch_name = da_source.metadata['neo_name']
+                        except Exception:
+                            import traceback; traceback.print_exc()
+                            ch_name = da.metadata['neo_name']
                         units = str(da.unit)
                         dtype = str(da.dtype)
                         sr = 1 / da.dimensions[0].sampling_interval
@@ -71,8 +79,16 @@ class NIXRawIO(BaseRawIO):
             for seg in bl.groups:
                 for mt in seg.multi_tags:
                     if mt.type == "neo.spiketrain":
-                        unit_name = mt.metadata['neo_name']
-                        unit_id = mt.id
+                        try:
+                            mt_source = [
+                                i for i in mt.sources
+                                if i.type == 'neo.unit'
+                            ][0]
+                            unit_name = mt_source.metadata['neo_name']
+                            unit_id = mt_source.id
+                        except Exception:
+                            unit_name = mt.metadata['neo_name']
+                            unit_id = mt.id
                         if mt.features:
                             wf_units = mt.features[0].data.unit
                             wf_sampling_rate = 1 / mt.features[0].data.dimensions[

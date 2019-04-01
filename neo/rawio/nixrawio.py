@@ -323,7 +323,6 @@ class NIXRawIO(BaseRawIO):
         raw_waveforms = np.array(waveforms)
         spike_timestamps = self._get_all_spike_timestamps(
             block_index, seg_index, unit_index)
-        #import pdb; pdb.set_trace()
         
         if t_start is not None or t_stop is not None:
             lim0 = t_start

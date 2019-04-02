@@ -589,7 +589,7 @@ class BaseRawIO(object):
         elif self.rawmode == 'one-dir':
             ressource_name = self.dirname
         else:
-            raise (NotImlementedError)
+            raise (NotImplementedError)
 
         if cache_path == 'home':
             if sys.platform.startswith('win'):

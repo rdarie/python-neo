@@ -43,23 +43,23 @@ class NIXRawIO(BaseRawIO):
                 for da_idx, da in enumerate(seg.data_arrays):
                     if da.type == "neo.analogsignal":
                         chan_id = da_idx
-                        '''
+                        #  true_da = seg.data_arrays[chan_id]
+                        true_da = da
                         try:
                             da_source = [
-                                i for i in da.sources
+                                i for i in true_da.sources
                                 if i.type == 'neo.channelindex'
                                 ][0]
                             ch_name = da_source.metadata['neo_name']
                         except Exception:
                             traceback.print_exc()
-                            ch_name = da.metadata['neo_name']
-                        '''
-                        ch_name = da.metadata['neo_name']
-                        
-                        units = str(da.unit)
-                        dtype = str(da.dtype)
-                        sr = 1 / da.dimensions[0].sampling_interval
-                        da_leng = da.size
+                            ch_name = true_da.metadata['neo_name']
+                        #  ch_name = da.metadata['neo_name']
+                        #  
+                        units = str(true_da.unit)
+                        dtype = str(true_da.dtype)
+                        sr = 1 / true_da.dimensions[0].sampling_interval
+                        da_leng = true_da.size
                         if da_leng not in size_list:
                             size_list.append(da_leng)
                         group_id = 0
@@ -83,7 +83,6 @@ class NIXRawIO(BaseRawIO):
             for seg in bl.groups:
                 for mt in seg.multi_tags:
                     if mt.type == "neo.spiketrain":
-                        '''
                         try:
                             mt_source = [
                                 i for i in mt.sources
@@ -91,14 +90,14 @@ class NIXRawIO(BaseRawIO):
                             ][0]
                             unit_name = mt_source.metadata['neo_name']
                             unit_id = mt_source.id
+                            #  import pdb; pdb.set_trace()
                         except Exception:
                             traceback.print_exc()
                             unit_name = mt.metadata['neo_name']
                             unit_id = mt.id
-                        '''
-                        unit_name = mt.metadata['neo_name']
-                        unit_id = mt.id
-                        #
+                        #  unit_name = mt.metadata['neo_name']
+                        #  unit_id = mt.id
+                        #  
                         if mt.features:
                             wf_units = mt.features[0].data.unit
                             wf_sampling_rate = 1 / mt.features[0].data.dimensions[
@@ -242,6 +241,7 @@ class NIXRawIO(BaseRawIO):
         return t_stop
 
     def _get_signal_size(self, block_index, seg_index, channel_indexes):
+        
         if isinstance(channel_indexes, slice):
             if channel_indexes == slice(None, None, None):
                 channel_indexes = list(range(self.header['signal_channels'].size))

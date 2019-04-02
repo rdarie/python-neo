@@ -11,7 +11,7 @@ from __future__ import print_function, division, absolute_import
 from neo.rawio.baserawio import (BaseRawIO, _signal_channel_dtype,
                                  _unit_channel_dtype, _event_channel_dtype)
 import numpy as np
-import warnings
+import warnings, traceback
 try:
     import nixio as nix
 
@@ -43,6 +43,7 @@ class NIXRawIO(BaseRawIO):
                 for da_idx, da in enumerate(seg.data_arrays):
                     if da.type == "neo.analogsignal":
                         chan_id = da_idx
+                        '''
                         try:
                             da_source = [
                                 i for i in da.sources
@@ -50,8 +51,11 @@ class NIXRawIO(BaseRawIO):
                                 ][0]
                             ch_name = da_source.metadata['neo_name']
                         except Exception:
-                            import traceback; traceback.print_exc()
+                            traceback.print_exc()
                             ch_name = da.metadata['neo_name']
+                        '''
+                        ch_name = da.metadata['neo_name']
+                        
                         units = str(da.unit)
                         dtype = str(da.dtype)
                         sr = 1 / da.dimensions[0].sampling_interval
@@ -79,6 +83,7 @@ class NIXRawIO(BaseRawIO):
             for seg in bl.groups:
                 for mt in seg.multi_tags:
                     if mt.type == "neo.spiketrain":
+                        '''
                         try:
                             mt_source = [
                                 i for i in mt.sources
@@ -87,8 +92,13 @@ class NIXRawIO(BaseRawIO):
                             unit_name = mt_source.metadata['neo_name']
                             unit_id = mt_source.id
                         except Exception:
+                            traceback.print_exc()
                             unit_name = mt.metadata['neo_name']
                             unit_id = mt.id
+                        '''
+                        unit_name = mt.metadata['neo_name']
+                        unit_id = mt.id
+                        #
                         if mt.features:
                             wf_units = mt.features[0].data.unit
                             wf_sampling_rate = 1 / mt.features[0].data.dimensions[
@@ -257,7 +267,7 @@ class NIXRawIO(BaseRawIO):
         return sig_t_start  # assume same group_id always same t_start
 
     def _get_analogsignal_chunk(self, block_index, seg_index, i_start, i_stop, channel_indexes):
-
+        
         if isinstance(channel_indexes, slice):
             if channel_indexes == slice(None, None, None):
                 channel_indexes = list(range(self.header['signal_channels'].size))
@@ -293,6 +303,7 @@ class NIXRawIO(BaseRawIO):
         return count
     
     def _get_all_spike_timestamps(self, block_index, seg_index, unit_index):
+        #  import pdb; pdb.set_trace()
         spike_dict = self.unit_list['blocks'][block_index]['segments'][seg_index]['spiketrains']
         spike_timestamps = spike_dict[unit_index]
         spike_timestamps = np.transpose(spike_timestamps)

@@ -43,8 +43,8 @@ class NIXRawIO(BaseRawIO):
                 for da_idx, da in enumerate(seg.data_arrays):
                     if da.type == "neo.analogsignal":
                         chan_id = da_idx
-                        #  true_da = seg.data_arrays[chan_id]
-                        true_da = da
+                        true_da = seg.data_arrays[chan_id]
+                        #  true_da = da
                         try:
                             da_source = [
                                 i for i in true_da.sources
@@ -149,11 +149,12 @@ class NIXRawIO(BaseRawIO):
                 size_list = []
                 data_list = []
                 da_name_list = []
-                for da in seg.data_arrays:
-                    if da.type == 'neo.analogsignal':
-                        size_list.append(da.size)
-                        data_list.append(da)
-                        da_name_list.append(da.metadata['neo_name'])
+                for da_idx, da in enumerate(seg.data_arrays):
+                    true_da = seg.data_arrays[da_idx]
+                    if true_da.type == 'neo.analogsignal':
+                        size_list.append(true_da.size)
+                        data_list.append(true_da)
+                        da_name_list.append(true_da.metadata['neo_name'])
                 self.da_list['blocks'][block_index]['segments'][seg_index]['data_size'] = size_list
                 self.da_list['blocks'][block_index]['segments'][seg_index]['data'] = data_list
                 self.da_list['blocks'][block_index]['segments'][seg_index]['ch_name'] = \
@@ -201,11 +202,12 @@ class NIXRawIO(BaseRawIO):
                 for props in seg.metadata.inherited_properties():
                     self._add_annotate(seg_ann, props, 'seg')
                 ansig_idx = 0
-                for da in seg.data_arrays:
-                    if da.type == 'neo.analogsignal' and seg_ann['signals'] != []:
+                for da_idx, da in enumerate(seg.data_arrays):
+                    true_da = seg.data_arrays[da_idx]
+                    if true_da.type == 'neo.analogsignal' and seg_ann['signals'] != []:
                         ana_an = seg_ann['signals'][ansig_idx]
                         sigch_an = self.raw_annotations['signal_channels'][ansig_idx]
-                        for props in da.metadata.inherited_properties():
+                        for props in true_da.metadata.inherited_properties():
                             self._add_annotate(ana_an, props, 'asig')
                             self._add_annotate(sigch_an, props, 'asig')
                         ansig_idx += 1

@@ -81,11 +81,13 @@ class NIXRawIO(BaseRawIO):
         unit_id = ""
         for bl in self.file.blocks:
             for seg in bl.groups:
-                for mt in seg.multi_tags:
-                    if mt.type == "neo.spiketrain":
+                mt_list = seg.multi_tags
+                for mt_idx, mt in mt_list:
+                    true_mt = mt_list[mt_idx]
+                    if true_mt.type == "neo.spiketrain":
                         try:
                             mt_source = [
-                                i for i in mt.sources
+                                i for i in true_mt.sources
                                 if i.type == 'neo.unit'
                             ][0]
                             unit_name = mt_source.metadata['neo_name']
@@ -93,22 +95,22 @@ class NIXRawIO(BaseRawIO):
                             #  import pdb; pdb.set_trace()
                         except Exception:
                             traceback.print_exc()
-                            unit_name = mt.metadata['neo_name']
-                            unit_id = mt.id
-                        #  unit_name = mt.metadata['neo_name']
-                        #  unit_id = mt.id
+                            unit_name = true_mt.metadata['neo_name']
+                            unit_id = true_mt.id
+                        #  unit_name = true_mt.metadata['neo_name']
+                        #  unit_id =id
                         #  
-                        if mt.features:
-                            wf_units = mt.features[0].data.unit
-                            wf_sampling_rate = 1 / mt.features[0].data.dimensions[
+                        if true_mt.features:
+                            wf_units = true_mt.features[0].data.unit
+                            wf_sampling_rate = 1 / true_mt.features[0].data.dimensions[
                                 2].sampling_interval
                         else:
                             wf_units = None
                             wf_sampling_rate = 0
                         wf_gain = 1
                         wf_offset = 0.
-                        if mt.features and "left_sweep" in mt.features[0].data.metadata:
-                            wf_left_sweep = mt.features[0].data.metadata["left_sweep"]
+                        if true_mt.features and "left_sweep" in true_mt.features[0].data.metadata:
+                            wf_left_sweep = true_mt.features[0].data.metadata["left_sweep"]
                         else:
                             wf_left_sweep = 0
                         unit_channels.append((unit_name, unit_id, wf_units, wf_gain,
@@ -122,15 +124,17 @@ class NIXRawIO(BaseRawIO):
         epoch_count = 0
         for bl in self.file.blocks:
             for seg in bl.groups:
-                for mt in seg.multi_tags:
-                    if mt.type == "neo.event":
-                        ev_name = mt.metadata['neo_name']
+                mt_list = seg.multi_tags
+                for mt_idx, mt in mt_list:
+                    true_mt = mt_list[mt_idx]
+                    if true_mt.type == "neo.event":
+                        ev_name = true_mt.metadata['neo_name']
                         ev_id = event_count
                         event_count += 1
                         ev_type = "event"
                         event_channels.append((ev_name, ev_id, ev_type))
-                    if mt.type == "neo.epoch":
-                        ep_name = mt.metadata['neo_name']
+                    if true_mt.type == "neo.epoch":
+                        ep_name = true_mt.metadata['neo_name']
                         ep_id = epoch_count
                         epoch_count += 1
                         ep_type = "epoch"
@@ -215,33 +219,41 @@ class NIXRawIO(BaseRawIO):
                         ansig_idx += 1
                 sp_idx = 0
                 ev_idx = 0
-                for mt in seg.multi_tags:
-                    if mt.type == 'neo.spiketrain' and seg_ann['units'] != []:
+                mt_list = seg.multi_tags
+                for mt_idx, mt in mt_list:
+                    true_mt = mt_list[mt_idx]
+                    if true_mt.type == 'neo.spiketrain' and seg_ann['units'] != []:
                         spiketrain_an = seg_ann['units'][sp_idx]
-                        for props in mt.metadata.inherited_properties():
+                        for props in true_mt.metadata.inherited_properties():
                             self._add_annotate(spiketrain_an, props, 'st')
                         sp_idx += 1
                     # if order is preserving, the annotations
                     # should go to the right place, need test
-                    if mt.type == "neo.event" or mt.type == "neo.epoch":
+                    if true_mt.type == "neo.event" or true_mt.type == "neo.epoch":
                         if seg_ann['events'] != []:
                             event_an = seg_ann['events'][ev_idx]
-                            for props in mt.metadata.inherited_properties():
+                            for props in true_mt.metadata.inherited_properties():
                                 self._add_annotate(event_an, props, 'ev')
                             ev_idx += 1
 
     def _segment_t_start(self, block_index, seg_index):
         t_start = 0
-        for mt in self.file.blocks[block_index].groups[seg_index].multi_tags:
-            if mt.type == "neo.spiketrain":
-                t_start = mt.metadata['t_start']
+        seg = self.file.blocks[block_index].groups[seg_index]
+        mt_list = seg.multi_tags
+        for mt_idx, mt in mt_list:
+            true_mt = mt_list[mt_idx]
+            if true_mt.type == "neo.spiketrain":
+                t_start = true_mt.metadata['t_start']
         return t_start
 
     def _segment_t_stop(self, block_index, seg_index):
         t_stop = 0
-        for mt in self.file.blocks[block_index].groups[seg_index].multi_tags:
-            if mt.type == "neo.spiketrain":
-                t_stop = mt.metadata['t_stop']
+        seg = self.file.blocks[block_index].groups[seg_index]
+        mt_list = seg.multi_tags
+        for mt_idx, mt in mt_list:
+            true_mt = mt_list[mt_idx]
+            if true_mt.type == "neo.spiketrain":
+                t_stop = true_mt.metadata['t_stop']
         return t_stop
 
     def _get_signal_size(self, block_index, seg_index, channel_indexes):
@@ -304,9 +316,12 @@ class NIXRawIO(BaseRawIO):
     def _spike_count(self, block_index, seg_index, unit_index):
         count = 0
         head_id = self.header['unit_channels'][unit_index][1]
-        for mt in self.file.blocks[block_index].groups[seg_index].multi_tags:
-            for src in mt.sources:
-                if mt.type == 'neo.spiketrain' and [src.type == "neo.unit"]:
+        seg = self.file.blocks[block_index].groups[seg_index]
+        mt_list = seg.multi_tags
+        for mt_idx, mt in mt_list:
+            true_mt = mt_list[mt_idx]
+            for src in true_mt.sources:
+                if true_mt.type == 'neo.spiketrain' and [src.type == "neo.unit"]:
                     if head_id == src.id:
                         return len(mt.positions)
         return count
@@ -353,10 +368,13 @@ class NIXRawIO(BaseRawIO):
 
     def _event_count(self, block_index, seg_index, event_channel_index):
         event_count = 0
-        for event in self.file.blocks[block_index].groups[seg_index].multi_tags:
-            if event.type == 'neo.event' or event.type == 'neo.epoch':
+        seg = self.file.blocks[block_index].groups[seg_index]
+        mt_list = seg.multi_tags
+        for mt_idx, mt in mt_list:
+            true_mt = mt_list[mt_idx]
+            if true_mt.type == 'neo.event' or true_mt.type == 'neo.epoch':
                 if event_count == event_channel_index:
-                    return len(event.positions)
+                    return len(true_mt.positions)
                 else:
                     event_count += 1
         return event_count
@@ -367,15 +385,18 @@ class NIXRawIO(BaseRawIO):
         durations = None
         if event_channel_index is None:
             raise IndexError
-        for mt in self.file.blocks[block_index].groups[seg_index].multi_tags:
-            if mt.type == "neo.event" or mt.type == "neo.epoch":
+        seg = self.file.blocks[block_index].groups[seg_index]
+        mt_list = seg.multi_tags
+        for mt_idx, mt in mt_list:
+            true_mt = mt_list[mt_idx]
+            if true_mt.type == "neo.event" or true_mt.type == "neo.epoch":
                 labels.append(mt.positions.dimensions[0].labels)
-                po = mt.positions
+                po = true_mt.positions
                 if po.type == "neo.event.times" or po.type == "neo.epoch.times":
                     timestamp.append(po)
                 if self.header['event_channels'][event_channel_index]['type'] == b'epoch' \
-                        and mt.extents:
-                    if mt.extents.type == 'neo.epoch.durations':
+                        and true_mt.extents:
+                    if true_mt.extents.type == 'neo.epoch.durations':
                         durations = np.array(mt.extents)
                         break
         timestamp = timestamp[event_channel_index][:]
@@ -393,9 +414,12 @@ class NIXRawIO(BaseRawIO):
 
     def _rescale_event_timestamp(self, event_timestamps, dtype='float64'):
         ev_unit = ''
-        for mt in self.file.blocks[0].groups[0].multi_tags:
-            if mt.type == "neo.event":
-                ev_unit = mt.positions.unit
+        seg = self.file.blocks[0].groups[0]
+        mt_list = seg.multi_tags
+        for mt_idx, mt in mt_list:
+            true_mt = mt_list[mt_idx]
+            if true_mt.type == "neo.event":
+                ev_unit = true_mt.positions.unit
                 break
         if ev_unit == 'ms':
             event_timestamps /= 1000
@@ -405,9 +429,12 @@ class NIXRawIO(BaseRawIO):
 
     def _rescale_epoch_duration(self, raw_duration, dtype='float64'):
         ep_unit = ''
-        for mt in self.file.blocks[0].groups[0].multi_tags:
-            if mt.type == "neo.epoch":
-                ep_unit = mt.positions.unit
+        seg = self.file.blocks[0].groups[0]
+        mt_list = seg.multi_tags
+        for mt_idx, mt in mt_list:
+            true_mt = mt_list[mt_idx]
+            if true_mt.type == "neo.epoch":
+                ep_unit = true_mt.positions.unit
                 break
         if ep_unit == 'ms':
             raw_duration /= 1000

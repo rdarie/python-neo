@@ -80,6 +80,7 @@ class BaseFromRaw(BaseIO):
         BaseIO.__init__(self, *args, **kargs)
         self.parse_header()
 
+
     def read_block(self, block_index=0, lazy=False, signal_group_mode=None,
                    units_group_mode=None, load_waveforms=False):
         """

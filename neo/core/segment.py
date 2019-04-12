@@ -103,6 +103,7 @@ class Segment(Container):
         '''
         Time when first signal begins.
         '''
+        
         t_starts = [sig.t_start for sig in self.analogsignals +
                     self.spiketrains + self.irregularlysampledsignals]
         t_starts += [e.times[0] for e in self.epochs + self.events if len(e.times) > 0]

@@ -1166,7 +1166,7 @@ class NixIO(BaseIO):
         :param v: The value to write
         :return: The newly created property
         """
-        #  print('name, {}, v, {}'.format(name, v))
+        print('name, {}, v, {}'.format(name, v))
         if isinstance(v, pq.Quantity):
             if len(v.shape):
                 section.create_property(name, tuple(v.magnitude))
@@ -1211,6 +1211,7 @@ class NixIO(BaseIO):
                     else:
                         item = item
                     values.append(item)
+            #  import pdb; pdb.set_trace()
             section.create_property(name, values)
             section.props[name].unit = unit
             if definition:

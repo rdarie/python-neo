@@ -1166,7 +1166,7 @@ class NixIO(BaseIO):
         :param v: The value to write
         :return: The newly created property
         """
-        print('name, {}, v, {}'.format(name, v))
+        #  print('name, {}, v, {}'.format(name, v))
         if isinstance(v, pq.Quantity):
             if len(v.shape):
                 section.create_property(name, tuple(v.magnitude))

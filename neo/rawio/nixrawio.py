@@ -95,6 +95,7 @@ class NIXRawIO(BaseRawIO):
                         except Exception:
                             traceback.print_exc()
                             unit_name = true_mt.metadata['neo_name']
+                            print('Error during loading {}'.format(unit_name))
                             unit_id = true_mt.id
                         #  unit_name = true_mt.metadata['neo_name']
                         #  unit_id =id
@@ -109,7 +110,7 @@ class NIXRawIO(BaseRawIO):
                         wf_gain = 1
                         wf_offset = 0.
                         if true_mt.features and "left_sweep" in true_mt.features[0].data.metadata:
-                            wf_left_sweep = true_mt.features[0].data.metadata["left_sweep"]
+                            wf_left_sweep = true_mt.features[0].data.metadata["left_sweep"] * wf_sampling_rate
                         else:
                             wf_left_sweep = 0
                         unit_channels.append((unit_name, unit_id, wf_units, wf_gain,
@@ -196,7 +197,6 @@ class NIXRawIO(BaseRawIO):
         self.header['signal_channels'] = sig_channels
         self.header['unit_channels'] = unit_channels
         self.header['event_channels'] = event_channels
-
         self._generate_minimal_annotations()
         for blk_idx, blk in enumerate(self.file.blocks):
             bl_ann = self.raw_annotations['blocks'][blk_idx]

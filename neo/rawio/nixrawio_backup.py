@@ -103,6 +103,7 @@ class NIXRawIO(BaseRawIO):
                             wf_units = true_mt.features[0].data.unit
                             wf_sampling_rate = 1 / true_mt.features[0].data.dimensions[
                                 2].sampling_interval
+                            print('wf_sampling_rate {}'.format(wf_sampling_rate))
                         else:
                             wf_units = None
                             wf_sampling_rate = 0

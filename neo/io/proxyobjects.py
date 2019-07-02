@@ -291,6 +291,7 @@ class SpikeTrainProxy(BaseProxy):
         annotations.update(ann)
 
         h = self._rawio.header['unit_channels'][unit_index]
+        
         wf_sampling_rate = h['wf_sampling_rate']
         if not np.isnan(wf_sampling_rate) and wf_sampling_rate > 0:
             self.sampling_rate = wf_sampling_rate * pq.Hz

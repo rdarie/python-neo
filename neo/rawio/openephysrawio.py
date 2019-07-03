@@ -88,6 +88,7 @@ class OpenEphysRawIO(BaseRawIO):
             all_first_timestamps = []
             all_last_timestamps = []
             all_samplerate = []
+            
             for chan_id, continuous_filename in enumerate(info['continuous'][seg_index]):
                 fullname = os.path.join(self.dirname, continuous_filename)
                 chan_info = read_file_header(fullname)
@@ -100,17 +101,22 @@ class OpenEphysRawIO(BaseRawIO):
                 data_chan = np.memmap(fullname, mode='r', offset=HEADER_SIZE,
                                         dtype=continuous_dtype, shape=(size, ))
                 self._sigs_memmap[seg_index][chan_id] = data_chan
-
+                
+                # check for continuity (no gaps)
+                diff = np.diff(data_chan['timestamp'])
+                try:
+                    assert np.all(diff == RECORD_SIZE), \
+                        'Not continuous timestamps for {}. ' \
+                        'Maybe because recording was paused/stopped.'.format(continuous_filename)
+                except:
+                    dummyTimestamp = np.concatenate((np.asarray([-data_chan['timestamp'][1]]), data_chan['timestamp']))
+                    mask = np.diff(dummyTimestamp) == RECORD_SIZE
+                    data_chan = data_chan[mask]
+                
                 all_sigs_length.append(data_chan.size * RECORD_SIZE)
                 all_first_timestamps.append(data_chan[0]['timestamp'])
                 all_last_timestamps.append(data_chan[-1]['timestamp'])
                 all_samplerate.append(chan_info['sampleRate'])
-
-                # check for continuity (no gaps)
-                diff = np.diff(data_chan['timestamp'])
-                assert np.all(diff == RECORD_SIZE), \
-                    'Not continuous timestamps for {}. ' \
-                    'Maybe because recording was paused/stopped.'.format(continuous_filename)
 
                 if seg_index == 0:
                     # add in channel list
@@ -295,8 +301,7 @@ class OpenEphysRawIO(BaseRawIO):
             data = self._sigs_memmap[seg_index][chan_id]
             sub = data[block_start:block_stop]
             sigs_chunk[:, i] = sub['samples'].flatten()[sl0:sl1]
-
-        return sigs_chunk
+        return sigs_chunk.byteswap()
 
     def _get_spike_slice(self, seg_index, unit_index, t_start, t_stop):
         name, sorted_id = self.header['unit_channels'][unit_index]['name'].split('#')
@@ -442,6 +447,7 @@ def explore_folder(dirname):
     info['nb_segment'] = 0
     info['continuous'] = {}
     info['spikes'] = {}
+    
     for filename in filenames:
         if filename.endswith('.continuous'):
             s = filename.replace('.continuous', '').split('_')
@@ -488,7 +494,6 @@ def explore_folder(dirname):
         order = [item for sublist in order for item in sublist]
         continuous_filenames = [continuous_filenames[i] for i in order]
         info['continuous'][seg_index] = continuous_filenames
-
     # order spike files within segment
     for seg_index, spike_filenames in info['spikes'].items():
         names = []

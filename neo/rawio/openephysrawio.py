@@ -101,20 +101,16 @@ class OpenEphysRawIO(BaseRawIO):
                                         dtype=continuous_dtype, shape=(size, ))
                 self._sigs_memmap[seg_index][chan_id] = data_chan
 
-                # check for continuity (no gaps)
-                diff = np.diff(data_chan['timestamp'])
-                try:
-                    assert np.all(diff == RECORD_SIZE), \
-                        'Not continuous timestamps for {}. ' \
-                        'Maybe because recording was paused/stopped.'.format(continuous_filename)
-                except:
-                    dummyTimestamp = np.concatenate((np.asarray([-data_chan['timestamp'][1]]), data_chan['timestamp']))
-                    mask = np.diff(dummyTimestamp) == RECORD_SIZE
-                    data_chan = data_chan[mask]
                 all_sigs_length.append(data_chan.size * RECORD_SIZE)
                 all_first_timestamps.append(data_chan[0]['timestamp'])
                 all_last_timestamps.append(data_chan[-1]['timestamp'])
                 all_samplerate.append(chan_info['sampleRate'])
+
+                # check for continuity (no gaps)
+                diff = np.diff(data_chan['timestamp'])
+                assert np.all(diff == RECORD_SIZE), \
+                    'Not continuous timestamps for {}. ' \
+                    'Maybe because recording was paused/stopped.'.format(continuous_filename)
 
                 if seg_index == 0:
                     # add in channel list

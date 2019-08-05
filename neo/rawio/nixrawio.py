@@ -39,7 +39,7 @@ class NIXRawIO(BaseRawIO):
         sig_channels = []
         size_list = []
         for bl in self.file.blocks:
-            for seg in bl.groups:
+            for seg_index, seg in enumerate(bl.groups):
                 for da_idx, da in enumerate(seg.data_arrays):
                     if da.type == "neo.analogsignal":
                         chan_id = da_idx
@@ -80,7 +80,7 @@ class NIXRawIO(BaseRawIO):
         unit_name = ""
         unit_id = ""
         for bl in self.file.blocks:
-            for seg in bl.groups:
+            for seg_index, seg in enumerate(bl.groups):
                 mt_list = seg.multi_tags
                 for mt_idx, mt in enumerate(mt_list):
                     true_mt = mt_list[mt_idx]
@@ -123,10 +123,12 @@ class NIXRawIO(BaseRawIO):
         event_count = 0
         epoch_count = 0
         for bl in self.file.blocks:
-            for seg in bl.groups:
+            for seg_index, seg in enumerate(bl.groups):
                 mt_list = seg.multi_tags
+                import pdb; pdb.set_trace()
                 for mt_idx, mt in enumerate(mt_list):
                     true_mt = mt_list[mt_idx]
+                    # true_mt = mt
                     if true_mt.type == "neo.event":
                         ev_name = true_mt.metadata['neo_name']
                         ev_id = event_count

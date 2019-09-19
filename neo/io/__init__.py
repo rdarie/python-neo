@@ -168,7 +168,8 @@ iolist = [
     KlustaKwikIO,
     KwikIO,
     MicromedIO,
-    NixIO,  # place NixIO before NeoHdf5IO to make it the default for .h5 files
+    #NixIO,  # place NixIO before NeoHdf5IO to make it the default for .h5 files
+    NixIOFr,  # place NixIO before NeoHdf5IO to make it the default for .h5 files
     NeoHdf5IO,
     NeoMatlabIO,
     NestIO,

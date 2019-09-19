@@ -39,7 +39,8 @@ class NIXRawIO(BaseRawIO):
         sig_channels = []
         size_list = []
         for bl in self.file.blocks:
-            for seg_index, seg in enumerate(bl.groups):
+            for seg_index, _ in enumerate(bl.groups):
+                seg = bl.groups[seg_index]
                 for da_idx, da in enumerate(seg.data_arrays):
                     if da.type == "neo.analogsignal":
                         chan_id = da_idx
@@ -80,7 +81,8 @@ class NIXRawIO(BaseRawIO):
         unit_name = ""
         unit_id = ""
         for bl in self.file.blocks:
-            for seg_index, seg in enumerate(bl.groups):
+            for seg_index, _ in enumerate(bl.groups):
+                seg = bl.groups[seg_index]
                 mt_list = seg.multi_tags
                 for mt_idx, mt in enumerate(mt_list):
                     true_mt = mt_list[mt_idx]
@@ -123,9 +125,9 @@ class NIXRawIO(BaseRawIO):
         event_count = 0
         epoch_count = 0
         for bl in self.file.blocks:
-            for seg_index, seg in enumerate(bl.groups):
+            for seg_index, _ in enumerate(bl.groups):
+                seg = bl.groups[seg_index]
                 mt_list = seg.multi_tags
-                import pdb; pdb.set_trace()
                 for mt_idx, mt in enumerate(mt_list):
                     true_mt = mt_list[mt_idx]
                     # true_mt = mt
@@ -149,7 +151,8 @@ class NIXRawIO(BaseRawIO):
         for block_index, blk in enumerate(self.file.blocks):
             d = {'segments': []}
             self.da_list['blocks'].append(d)
-            for seg_index, seg in enumerate(blk.groups):
+            for seg_index, _ in enumerate(blk.groups):
+                seg = bl.groups[seg_index]
                 d = {'signals': []}
                 self.da_list['blocks'][block_index]['segments'].append(d)
                 size_list = []
@@ -170,7 +173,8 @@ class NIXRawIO(BaseRawIO):
         for block_index, blk in enumerate(self.file.blocks):
             d = {'segments': []}
             self.unit_list['blocks'].append(d)
-            for seg_index, seg in enumerate(blk.groups):
+            for seg_index, _ in enumerate(blk.groups):
+                seg = bl.groups[seg_index]
                 d = {'spiketrains': [], 'spiketrains_id': [], 'spiketrains_unit': []}
                 self.unit_list['blocks'][block_index]['segments'].append(d)
                 st_idx = 0
@@ -204,7 +208,8 @@ class NIXRawIO(BaseRawIO):
             bl_ann = self.raw_annotations['blocks'][blk_idx]
             for props in blk.metadata.inherited_properties():
                 self._add_annotate(bl_ann, props, 'blk')
-            for seg_index, seg in enumerate(blk.groups):
+            for seg_index, _ in enumerate(blk.groups):
+                seg = bl.groups[seg_index]
                 seg_ann = bl_ann['segments'][seg_index]
                 for props in seg.metadata.inherited_properties():
                     self._add_annotate(seg_ann, props, 'seg')
@@ -258,7 +263,6 @@ class NIXRawIO(BaseRawIO):
         return t_stop
 
     def _get_signal_size(self, block_index, seg_index, channel_indexes):
-        
         if isinstance(channel_indexes, slice):
             if channel_indexes == slice(None, None, None):
                 channel_indexes = list(range(self.header['signal_channels'].size))

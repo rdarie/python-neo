@@ -1,0 +1,27 @@
+{
+    "remotePath": "/users/YOURUSERNAME/Github/python-neo",
+    "host": "ssh.ccv.brown.edu",
+    "username": "YOURUSERNAME",
+    "password": "YOURPASSWORD",
+    "port": 22,
+    "secure": true,
+    "protocol": "sftp",
+    "uploadOnSave": true,
+    "passive": false,
+    "debug": false,
+    "privateKeyPath": null,
+    "passphrase": null,
+    "agent": null,
+    "allow": [],
+    "ignore": [
+        "\\.vscode",
+        "\\.git",
+        "\\.DS_Store"
+    ],
+    "generatedFiles": {
+        "extensionsToInclude": [
+            ""
+        ],
+        "path": ""
+    }
+}

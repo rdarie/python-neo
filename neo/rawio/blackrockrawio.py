@@ -257,16 +257,20 @@ class BlackrockRawIO(BaseRawIO):
                     self.internal_unit_ids.append((channel_id, unit_id))
                     name = "ch{}#{}".format(channel_id, unit_id)
                     _id = "Unit {}".format(1000 * channel_id + unit_id)
-                    wf_gain = self.__nev_params('digitization_factor')[channel_id] / 1000.
+                    if channel_id > 5120:
+                        wf_gain = (self.__nev_params('digitization_factor')[channel_id] * 1e6)
+                        wf_left_sweep = 0
+                    else:
+                        wf_gain = self.__nev_params('digitization_factor')[channel_id] / 1000.
+                        wf_left_sweep = 10
+                    #import pdb; pdb.set_trace() # _BlackrockRawIO
                     wf_offset = 0.
                     wf_units = 'uV'
                     # TODO: Double check if this is the correct assumption (10 samples)
                     # default value: threshold crossing after 10 samples of waveform
-                    wf_left_sweep = 10
                     wf_sampling_rate = main_sampling_rate
                     unit_channels.append((name, _id, wf_units, wf_gain,
                                           wf_offset, wf_left_sweep, wf_sampling_rate))
-
             # scan events
             # NonNeural: serial and digital input
             events_data, event_segment_ids = self.nev_data['NonNeural']
@@ -1107,7 +1111,7 @@ class BlackrockRawIO(BaseRawIO):
         """
 
         ext_header_variants = {
-            b'NEUEVWAV': 'b',
+            b'NEUEVWAV': 'c',
             b'ARRAYNME': 'a',
             b'ECOMMENT': 'a',
             b'CCOMMENT': 'a',
@@ -1385,7 +1389,23 @@ class BlackrockRawIO(BaseRawIO):
                     ('bytes_per_waveform', 'uint8'),
                     # number of samples for each waveform
                     ('spike_width', 'uint16'),
-                    ('unused', 'S8')]},
+                    ('unused', 'S8')],
+                # Version==2.2
+                'c': [
+                    ('packet_id', 'S8'),
+                    ('electrode_id', 'uint16'),
+                    ('physical_connector', 'uint8'),
+                    ('connector_pin', 'uint8'),
+                    ('digitization_factor', 'uint16'),
+                    ('energy_threshold', 'uint16'),
+                    ('hi_threshold', 'int16'),
+                    ('lo_threshold', 'int16'),
+                    ('nb_sorted_units', 'uint8'),
+                    # number of bytes per waveform sample
+                    ('bytes_per_waveform', 'uint8'),
+                    # digi factor for stim events
+                    ('stim_digitization_factor', 'float32'),
+                    ('unused', 'S6')]},
             b'ARRAYNME': {
                 'a': [
                     ('packet_id', 'S8'),
@@ -1477,7 +1497,7 @@ class BlackrockRawIO(BaseRawIO):
                 'a': (packet_ids == 0)},
             'Spikes': {
                 # Version 2.1 & 2.2
-                'a': (0 < packet_ids) & (packet_ids <= 255),
+                'a': (0 < packet_ids) & ((packet_ids <= 255) | (packet_ids >= 5121)),
                 # Version>=2.3
                 'b': (0 < packet_ids) & (packet_ids <= 2048)},
             'Comments': {
@@ -1573,6 +1593,13 @@ class BlackrockRawIO(BaseRawIO):
         """
         Returns wanted nev parameter.
         """
+        digitization_factor_dict = dict(zip(
+            self.__nev_ext_header[b'NEUEVWAV']['electrode_id'],
+            self.__nev_ext_header[b'NEUEVWAV']['digitization_factor']))
+        for idx, elid in enumerate(self.__nev_ext_header[b'NEUEVWAV']['electrode_id']):
+            if digitization_factor_dict[elid] == 0:
+                digitization_factor_dict[elid] = (
+                    self.__nev_ext_header[b'NEUEVWAV']['stim_digitization_factor'][idx])
         nev_parameters = {
             'bytes_in_data_packets':
                 self.__nev_basic_header['bytes_in_data_packets'],
@@ -1592,9 +1619,7 @@ class BlackrockRawIO(BaseRawIO):
             'nb_units': dict(zip(
                 self.__nev_ext_header[b'NEUEVWAV']['electrode_id'],
                 self.__nev_ext_header[b'NEUEVWAV']['nb_sorted_units'])),
-            'digitization_factor': dict(zip(
-                self.__nev_ext_header[b'NEUEVWAV']['electrode_id'],
-                self.__nev_ext_header[b'NEUEVWAV']['digitization_factor'])),
+            'digitization_factor': digitization_factor_dict,
             'data_size': self.__nev_basic_header['bytes_in_data_packets'],
             'waveform_size': self.__waveform_size[self.__nev_spec](),
             'waveform_dtypes': self.__get_waveforms_dtype(),

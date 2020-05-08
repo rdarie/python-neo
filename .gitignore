@@ -66,4 +66,4 @@ neo/test/io/neurosharemergeio.py
 files_for_testing_neo
 
 #
-.vscode/
+.vscode/ftp-sync.json

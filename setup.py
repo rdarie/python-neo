@@ -5,16 +5,17 @@ from setuptools import setup
 import os
 
 long_description = open("README.rst").read()
-install_requires = ['numpy>=1.7.1',
-                    'quantities>=0.9.0']
+with open('requirements.txt') as fp:
+    install_requires = fp.read().splitlines()
+    
 extras_require = {
     'hdf5io': ['h5py'],
     'igorproio': ['igor'],
     'kwikio': ['scipy', 'klusta'],
     'neomatlabio': ['scipy>=0.12.0'],
-    'nixio': ['nixio>=1.5.0b2'],
+    # 'nixio': ['nixio>=1.5.0b2'],
     'stimfitio': ['stfio'],
-}
+    }
 
 if os.environ.get('TRAVIS') == 'true' and \
         os.environ.get('TRAVIS_PYTHON_VERSION').startswith('2.6'):

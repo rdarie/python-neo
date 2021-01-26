@@ -59,6 +59,7 @@ TODO:
 
 from __future__ import absolute_import, division, print_function
 
+import pdb
 import datetime
 import os
 import re
@@ -263,7 +264,6 @@ class BlackrockRawIO(BaseRawIO):
                     else:
                         wf_gain = self.__nev_params('digitization_factor')[channel_id] / 1000.
                         wf_left_sweep = 10
-                    #import pdb; pdb.set_trace() # _BlackrockRawIO
                     wf_offset = 0.
                     wf_units = 'uV'
                     # TODO: Double check if this is the correct assumption (10 samples)
@@ -477,7 +477,7 @@ class BlackrockRawIO(BaseRawIO):
         self.header['event_channels'] = event_channels
 
         rec_datetime = self.__nev_params('rec_datetime') if self._avail_files['nev'] else None
-
+        
         # Put annotations at some places for compatibility
         # with previous BlackrockIO version
         self._generate_minimal_annotations()
@@ -1062,7 +1062,7 @@ class BlackrockRawIO(BaseRawIO):
             ('comment_field', 'S256'),
             # Number of extended headers
             ('nb_ext_headers', 'uint32')]
-
+        
         nev_basic_header = np.fromfile(filename, count=1, dtype=dt0)[0]
 
         # extended header
@@ -1610,7 +1610,7 @@ class BlackrockRawIO(BaseRawIO):
                 hour=self.__nev_basic_header['hour'],
                 minute=self.__nev_basic_header['minute'],
                 second=self.__nev_basic_header['second'],
-                microsecond=self.__nev_basic_header['millisecond']),
+                microsecond=1000 * self.__nev_basic_header['millisecond']),
             'max_res': self.__nev_basic_header['timestamp_resolution'],
             'channel_ids': self.__nev_ext_header[b'NEUEVWAV']['electrode_id'],
             'channel_labels': self.__channel_labels[self.__nev_spec](),

@@ -30,6 +30,7 @@ from uuid import uuid4
 
 import quantities as pq
 import numpy as np
+import pdb
 
 from .baseio import BaseIO
 from ..core import (Block, Segment, ChannelIndex, AnalogSignal,
@@ -1211,7 +1212,6 @@ class NixIO(BaseIO):
                     else:
                         item = item
                     values.append(item)
-            #  import pdb; pdb.set_trace()
             section.create_property(name, values)
             section.props[name].unit = unit
             if definition:

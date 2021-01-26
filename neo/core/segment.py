@@ -106,7 +106,14 @@ class Segment(Container):
         
         t_starts = [sig.t_start for sig in self.analogsignals +
                     self.spiketrains + self.irregularlysampledsignals]
-        t_starts += [e.times[0] for e in self.epochs + self.events if len(e.times) > 0]
+        
+        for e in (self.epochs + self.events):
+            if hasattr(e, 'times'):
+                if len(e.times) > 0:
+                    t_starts += [e.times[0]]
+        # t_starts += [
+        #     e.times[0]
+        #     for e in self.epochs + self.events if len(e.times) > 0]
 
         # t_start is not defined if no children are present
         if len(t_starts) == 0:
@@ -123,7 +130,11 @@ class Segment(Container):
         '''
         t_stops = [sig.t_stop for sig in self.analogsignals +
                    self.spiketrains + self.irregularlysampledsignals]
-        t_stops += [e.times[-1] for e in self.epochs + self.events if len(e.times) > 0]
+        for e in (self.epochs + self.events):
+            if hasattr(e, 'times'):
+                if len(e.times) > 0:
+                    t_stops += [e.times[-1]]
+        # t_stops += [e.times[-1] for e in self.epochs + self.events if len(e.times) > 0]
 
         # t_stop is not defined if no children are present
         if len(t_stops) == 0:
